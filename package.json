@@ -1,0 +1,20 @@
+{
+  "name": "hash-app",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"node dev-server.js\" \"vite\"",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
+    "vite": "^5.0.0"
+  }
+}
