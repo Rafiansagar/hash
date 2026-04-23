@@ -32,16 +32,17 @@ function derivedFromHash(hexHash, opts) {
 }
 
 export default function App() {
-  const [input, setInput]     = useState('')
-  const [hash, setHash]       = useState('')
-  const [caseMode, setCaseMode] = useState('lower')
-  const [charset, setCharset] = useState({ lower: true, upper: true, digits: true, symbols: true })
-  const [copied, setCopied]   = useState({ hash: false, derived: false })
-  const [loading, setLoading] = useState(false)
-  const debounceRef           = useRef(null)
+  const [input, setInput]         = useState('')
+  const [saltedHash, setSaltedHash] = useState('')
+  const [plainHash, setPlainHash]   = useState('')
+  const [caseMode, setCaseMode]   = useState('lower')
+  const [charset, setCharset]     = useState({ lower: true, upper: true, digits: true, symbols: true })
+  const [copied, setCopied]       = useState({ salted: false, plain: false, saltedDerived: false, plainDerived: false })
+  const [loading, setLoading]     = useState(false)
+  const debounceRef               = useRef(null)
 
   useEffect(() => {
-    if (!input) { setHash(''); return }
+    if (!input) { setSaltedHash(''); setPlainHash(''); return }
 
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
@@ -53,9 +54,11 @@ export default function App() {
           body: JSON.stringify({ text: input }),
         })
         const data = await res.json()
-        setHash(data.hash || '')
+        setSaltedHash(data.saltedHash || '')
+        setPlainHash(data.plainHash || '')
       } catch {
-        setHash('')
+        setSaltedHash('')
+        setPlainHash('')
       } finally {
         setLoading(false)
       }
@@ -64,8 +67,10 @@ export default function App() {
     return () => clearTimeout(debounceRef.current)
   }, [input])
 
-  const displayHash = caseMode === 'upper' ? hash.toUpperCase() : hash
-  const derived     = hash ? derivedFromHash(hash, charset) : ''
+  const displaySalted = caseMode === 'upper' ? saltedHash.toUpperCase() : saltedHash
+  const displayPlain  = caseMode === 'upper' ? plainHash.toUpperCase()  : plainHash
+  const saltedDerived = saltedHash ? derivedFromHash(saltedHash, charset) : ''
+  const plainDerived  = plainHash  ? derivedFromHash(plainHash,  charset) : ''
 
   function copy(text, key) {
     if (!text) return
@@ -74,6 +79,8 @@ export default function App() {
       setTimeout(() => setCopied(c => ({ ...c, [key]: false })), 1500)
     })
   }
+
+  const emptyPlaceholder = loading ? 'Computing…' : 'Enter text above to generate hash'
 
   return (
     <div className="card">
@@ -103,13 +110,31 @@ export default function App() {
         </div>
       </div>
 
+      {/* Plain MD5 */}
       <div className="hash-box" style={{ marginTop: '14px' }}>
-        <label>MD5 Hash</label>
-        <div className={`hash-value${!displayHash ? ' empty' : ''}`}>
-          {loading ? 'Computing…' : (displayHash || 'Enter text above to generate hash')}
+        <div className="derived-label">
+          <label style={{ marginBottom: 0 }}>MD5 Hash</label>
+          <span className="badge badge-plain">No salt</span>
         </div>
-        <button className={`copy-btn${copied.hash ? ' copied' : ''}`} onClick={() => copy(displayHash, 'hash')}>
-          {copied.hash ? 'Copied!' : 'Copy'}
+        <div className={`hash-value${!displayPlain ? ' empty' : ''}`}>
+          {displayPlain || emptyPlaceholder}
+        </div>
+        <button className={`copy-btn${copied.plain ? ' copied' : ''}`} onClick={() => copy(displayPlain, 'plain')}>
+          {copied.plain ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+
+      {/* Salted HMAC-MD5 */}
+      <div className="hash-box" style={{ marginTop: '12px' }}>
+        <div className="derived-label">
+          <label style={{ marginBottom: 0 }}>MD5 Hash</label>
+          <span className="badge">Salted</span>
+        </div>
+        <div className={`hash-value${!displaySalted ? ' empty' : ''}`}>
+          {displaySalted || emptyPlaceholder}
+        </div>
+        <button className={`copy-btn${copied.salted ? ' copied' : ''}`} onClick={() => copy(displaySalted, 'salted')}>
+          {copied.salted ? 'Copied!' : 'Copy'}
         </button>
       </div>
 
@@ -133,24 +158,41 @@ export default function App() {
         </div>
       </div>
 
+      {/* Plain derived */}
       <div className="hash-box" style={{ marginTop: '14px' }}>
         <div className="derived-label">
           <label style={{ marginBottom: 0 }}>Derived Output</label>
-          <span className="badge">HMAC-MD5 salted</span>
+          <span className="badge badge-plain">No salt</span>
         </div>
-        <div className={`hash-value${!derived ? ' empty' : ''}`}>
-          {derived || (Object.values(charset).some(Boolean)
+        <div className={`hash-value${!plainDerived ? ' empty' : ''}`}>
+          {plainDerived || (Object.values(charset).some(Boolean)
             ? 'Enter text above to generate'
             : 'Enable at least one character type')}
         </div>
-        <button className={`copy-btn${copied.derived ? ' copied' : ''}`} onClick={() => copy(derived, 'derived')}>
-          {copied.derived ? 'Copied!' : 'Copy'}
+        <button className={`copy-btn${copied.plainDerived ? ' copied' : ''}`} onClick={() => copy(plainDerived, 'plainDerived')}>
+          {copied.plainDerived ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+
+      {/* Salted derived */}
+      <div className="hash-box" style={{ marginTop: '12px' }}>
+        <div className="derived-label">
+          <label style={{ marginBottom: 0 }}>Derived Output</label>
+          <span className="badge">Salted</span>
+        </div>
+        <div className={`hash-value${!saltedDerived ? ' empty' : ''}`}>
+          {saltedDerived || (Object.values(charset).some(Boolean)
+            ? 'Enter text above to generate'
+            : 'Enable at least one character type')}
+        </div>
+        <button className={`copy-btn${copied.saltedDerived ? ' copied' : ''}`} onClick={() => copy(saltedDerived, 'saltedDerived')}>
+          {copied.saltedDerived ? 'Copied!' : 'Copy'}
         </button>
       </div>
 
       {input && (
         <div className="meta">
-          {input.length} char{input.length !== 1 ? 's' : ''} · HMAC-MD5 with salt
+          {input.length} char{input.length !== 1 ? 's' : ''} · plain MD5 + HMAC-MD5 with salt
         </div>
       )}
     </div>

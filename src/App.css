@@ -179,3 +179,8 @@ textarea:focus { border-color: #444; }
   font-weight: 600;
   letter-spacing: 0.05em;
 }
+
+.badge-plain {
+  background: #2a1f3a;
+  color: #a78bfa;
+}

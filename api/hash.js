@@ -10,8 +10,9 @@ module.exports = function handler(req, res) {
     return res.status(400).json({ error: 'text is required' })
   }
 
-  const salt = process.env.HASH_SALT || ''
-  const hash = crypto.createHmac('md5', salt).update(text).digest('hex')
+  const salt      = process.env.HASH_SALT || ''
+  const saltedHash = crypto.createHmac('md5', salt).update(text).digest('hex')
+  const plainHash  = crypto.createHash('md5').update(text).digest('hex')
 
-  res.json({ hash })
+  res.json({ saltedHash, plainHash })
 }
